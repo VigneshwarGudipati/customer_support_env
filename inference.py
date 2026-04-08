@@ -1,11 +1,8 @@
 import os
 from openai import OpenAI
 
-# MUST use strict env variables (NO fallback)
 API_BASE_URL = os.environ["API_BASE_URL"]
 API_KEY = os.environ["API_KEY"]
-
-# IMPORTANT: use correct model name
 MODEL_NAME = "gpt-4.1-mini"
 
 client = OpenAI(
@@ -19,29 +16,21 @@ def run_episode():
     rewards = []
     success = False
 
-    # 🔥 FORCE API CALL BEFORE LOOP (CRITICAL FIX)
-    response = client.chat.completions.create(
+    # 🔥 FORCE API CALL (IMPORTANT)
+    client.responses.create(
         model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Say hello"}
-        ],
-        temperature=0.0
+        input="Say hello"
     )
 
     for step in range(1, 4):
 
-        # 🔥 SECOND API CALL (INSIDE LOOP)
-        response = client.chat.completions.create(
+        # 🔥 MAIN API CALL
+        response = client.responses.create(
             model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": "You are a customer support agent."},
-                {"role": "user", "content": "Customer: My order is delayed."}
-            ],
-            temperature=0.0
+            input="Customer: My order is delayed and I am upset. Respond politely."
         )
 
-        action = response.choices[0].message.content.strip()
+        action = response.output[0].content[0].text.strip()
 
         reward = 1.0 if step == 3 else 0.5
         done = step == 3
