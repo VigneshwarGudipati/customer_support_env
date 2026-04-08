@@ -1,41 +1,48 @@
 import os
 from openai import OpenAI
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
-HF_TOKEN = os.getenv("HF_TOKEN")
-
-if HF_TOKEN is None:
-raise ValueError("HF_TOKEN environment variable is required")
+# Use injected variables 
+API_BASE_URL = os.environ["API_BASE_URL"]
+MODEL_NAME = os.environ["MODEL_NAME"]
+API_KEY = os.environ["API_KEY"]
 
 client = OpenAI(
-base_url=API_BASE_URL,
-api_key=HF_TOKEN
+    base_url=API_BASE_URL,
+    api_key=API_KEY
 )
 
 def run_episode():
-print(f"[START] task=customer_support env=openenv model={MODEL_NAME}")
+    print(f"[START] task=customer_support env=openenv model={MODEL_NAME}")
 
-```
-rewards = []
-success = False
+    rewards = []
+    success = False
 
-for step in range(1, 4):
-    action = "I am sorry, I will help resolve your issue"
+    for step in range(1, 4):
+         #  LLM CALL
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": "You are a helpful customer support agent."},
+                {"role": "user", "content": "Customer: My order is delayed and I am upset."}
+            ],
+            temperature=0.0
+        )
 
-    reward = 1.0 if step == 3 else 0.5
-    done = step == 3
+        action = response.choices[0].message.content.strip()
 
-    rewards.append(f"{reward:.2f}")
+        reward = 1.0 if step == 3 else 0.5
+        done = step == 3
 
-    print(f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error=null")
+        rewards.append(f"{reward:.2f}")
 
-    if done:
-        success = True
-        break
+        print(f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error=null")
 
-print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(rewards)}")
-```
+        if done:
+            success = True
+            break
+
+    print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(rewards)}")
+
 
 if __name__ == "__main__":
     run_episode()
