@@ -37,5 +37,5 @@ for step in range(1, 4):
 print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(rewards)}")
 ```
 
-if **name** == "**main**":
-run_episode()
+if __name__ == "__main__":
+    run_episode()
