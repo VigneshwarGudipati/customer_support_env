@@ -1,9 +1,12 @@
 import os
 from openai import OpenAI
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
-API_KEY = os.getenv("API_KEY", "dummy")
+# MUST use strict env variables (NO fallback)
+API_BASE_URL = os.environ["API_BASE_URL"]
+API_KEY = os.environ["API_KEY"]
+
+# IMPORTANT: use correct model name
+MODEL_NAME = "gpt-4.1-mini"
 
 client = OpenAI(
     base_url=API_BASE_URL,
@@ -16,13 +19,24 @@ def run_episode():
     rewards = []
     success = False
 
+    # 🔥 FORCE API CALL BEFORE LOOP (CRITICAL FIX)
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Say hello"}
+        ],
+        temperature=0.0
+    )
+
     for step in range(1, 4):
 
+        # 🔥 SECOND API CALL (INSIDE LOOP)
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": "You are a helpful support agent."},
-                {"role": "user", "content": "Customer: My order is delayed and I am upset."}
+                {"role": "system", "content": "You are a customer support agent."},
+                {"role": "user", "content": "Customer: My order is delayed."}
             ],
             temperature=0.0
         )
@@ -41,6 +55,7 @@ def run_episode():
             break
 
     print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(rewards)}")
+
 
 if __name__ == "__main__":
     run_episode()
