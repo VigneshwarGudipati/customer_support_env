@@ -17,6 +17,9 @@ class CustomerSupportEnvironment(Environment):
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self.task_type = "easy"
 
+    # =========================
+    # RESET
+    # =========================
     def reset(self):
         self._state = State(episode_id=str(uuid4()), step_count=0)
 
@@ -37,31 +40,44 @@ class CustomerSupportEnvironment(Environment):
             metadata={"task_type": self.task_type}
         )
 
+    # =========================
+    # GRADER FUNCTION (IMPORTANT 🔥)
+    # =========================
+    def grade_response(self, response: str) -> float:
+        score = 0.0
+
+        # Empathy
+        if "sorry" in response or "apologize" in response:
+            score += 0.3
+
+        # Understanding
+        if "understand" in response or "frustrated" in response:
+            score += 0.2
+
+        # Solution
+        if any(word in response for word in ["refund", "replace", "resolve", "track"]):
+            score += 0.4
+
+        # Politeness
+        if "thank" in response:
+            score += 0.1
+
+        # Penalty
+        if len(response.split()) < 5:
+            score -= 0.2
+
+        return max(0.0, min(score, 1.0))
+
+    # =========================
+    # STEP
+    # =========================
     def step(self, action):
         self._state.step_count += 1
 
         response = action.message.lower()
-        reward = 0.0
 
-        # Empathy
-        if "sorry" in response or "apologize" in response:
-            reward += 0.3
-
-        # Understanding
-        if "understand" in response or "frustrated" in response:
-            reward += 0.2
-
-        # Solution
-        if any(word in response for word in ["refund", "replace", "resolve", "track"]):
-            reward += 0.4
-
-        # Politeness
-        if "thank" in response:
-            reward += 0.1
-
-        # Penalty
-        if len(response.split()) < 5:
-            reward -= 0.2
+        # 🔥 Use grader instead of manual reward
+        reward = self.grade_response(response)
 
         done = self._state.step_count >= 3
 
@@ -77,8 +93,9 @@ class CustomerSupportEnvironment(Environment):
             },
         )
 
+    # =========================
+    # STATE
+    # =========================
     @property
     def state(self):
         return self._state
-    
-    # updated version
