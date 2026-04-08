@@ -1,7 +1,6 @@
 import os
 from openai import OpenAI
 
-# 🔥 STRICT VARIABLES (NO FALLBACK)
 API_BASE_URL = os.environ["API_BASE_URL"]
 API_KEY = os.environ["API_KEY"]
 
@@ -18,34 +17,23 @@ def run_episode():
     rewards = []
     success = False
 
-    # 🔥 DEBUG PRINT (ENSURE EXECUTION)
-    print("[DEBUG] Making first API call")
-
-    # 🔥 USE SIMPLE CHAT FORMAT (MOST COMPATIBLE)
-    response = client.chat.completions.create(
+    # 🔥 FIRST API CALL
+    response = client.responses.create(
         model=MODEL_NAME,
-        messages=[
-            {"role": "user", "content": "Hello"}
-        ],
-        temperature=0.0
+        input="Hello"
     )
 
-    print("[DEBUG] First API call completed")
+    action = response.output_text.strip()
 
     for step in range(1, 4):
 
-        print(f"[DEBUG] Step {step} API call")
-
-        response = client.chat.completions.create(
+        # 🔥 SECOND API CALL
+        response = client.responses.create(
             model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": "You are a helpful support agent"},
-                {"role": "user", "content": "Customer: My order is delayed"}
-            ],
-            temperature=0.0
+            input="Customer: My order is delayed. Respond politely."
         )
 
-        action = response.choices[0].message.content.strip()
+        action = response.output_text.strip()
 
         reward = 1.0 if step == 3 else 0.5
         done = step == 3
