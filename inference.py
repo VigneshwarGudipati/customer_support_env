@@ -1,10 +1,9 @@
 import os
 from openai import OpenAI
 
-# Use injected variables 
-API_BASE_URL = os.environ["API_BASE_URL"]
-MODEL_NAME = os.environ["MODEL_NAME"]
-API_KEY = os.environ["API_KEY"]
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
+API_KEY = os.getenv("API_KEY", "dummy")
 
 client = OpenAI(
     base_url=API_BASE_URL,
@@ -18,11 +17,11 @@ def run_episode():
     success = False
 
     for step in range(1, 4):
-         #  LLM CALL
+
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": "You are a helpful customer support agent."},
+                {"role": "system", "content": "You are a helpful support agent."},
                 {"role": "user", "content": "Customer: My order is delayed and I am upset."}
             ],
             temperature=0.0
@@ -42,7 +41,6 @@ def run_episode():
             break
 
     print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(rewards)}")
-
 
 if __name__ == "__main__":
     run_episode()
