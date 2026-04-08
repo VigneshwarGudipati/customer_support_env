@@ -279,5 +279,11 @@ The agent is rewarded based on behavior:
 - Politeness ("thank you") → +0.1  
 - Short responses → penalty  
 
+## Baseline Performance
+
+- Easy → 0.8–1.0  
+- Medium → 0.6–0.9  
+- Hard → 0.5–0.8  
+
 This encourages agents to respond with empathy, clarity, and actionable solutions.
 Designed for real-world deployment in customer service automation systems.
