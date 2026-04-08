@@ -1,14 +1,16 @@
 import os
 from openai import OpenAI
 
-# ✅ REQUIRED ENV VARIABLES
-API_BASE_URL = os.getenv("API_BASE_URL")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+# 🔥 STRICT (NO FALLBACK)
+API_BASE_URL = os.environ["API_BASE_URL"]
+API_KEY = os.environ["API_KEY"]
+
+# 🔥 IMPORTANT: use simple known model
+MODEL_NAME = "gpt-4.1-mini"
 
 client = OpenAI(
     base_url=API_BASE_URL,
-    api_key=API_KEY
+    api_key=API_KEY,
 )
 
 def run_episode():
@@ -17,24 +19,20 @@ def run_episode():
     rewards = []
     success = False
 
-    # 🔥 FORCE API CALL (VERY IMPORTANT)
-    response = client.chat.completions.create(
+    # 🔥 CRITICAL: SIMPLE API CALL (NO CHAT FORMAT)
+    client.responses.create(
         model=MODEL_NAME,
-        messages=[{"role": "user", "content": "Say hello"}],
-        temperature=0.0
+        input="hello"
     )
 
     for step in range(1, 4):
-        response = client.chat.completions.create(
+        response = client.responses.create(
             model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": "You are a customer support agent"},
-                {"role": "user", "content": "Customer: My order is delayed and I am upset"}
-            ],
-            temperature=0.0
+            input="Customer says: My order is delayed. Respond politely."
         )
 
-        action = response.choices[0].message.content.strip()
+        # 🔥 SAFE extraction
+        action = response.output_text.strip()
 
         reward = 1.0 if step == 3 else 0.5
         done = step == 3
@@ -48,6 +46,7 @@ def run_episode():
             break
 
     print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(rewards)}")
+
 
 if __name__ == "__main__":
     run_episode()
