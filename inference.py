@@ -1,11 +1,10 @@
 import os
 from openai import OpenAI
 
-# 🔥 STRICT (NO FALLBACK)
+# 🔥 STRICT VARIABLES (NO FALLBACK)
 API_BASE_URL = os.environ["API_BASE_URL"]
 API_KEY = os.environ["API_KEY"]
 
-# 🔥 IMPORTANT: use simple known model
 MODEL_NAME = "gpt-4.1-mini"
 
 client = OpenAI(
@@ -19,20 +18,34 @@ def run_episode():
     rewards = []
     success = False
 
-    # 🔥 CRITICAL: SIMPLE API CALL (NO CHAT FORMAT)
-    client.responses.create(
+    # 🔥 DEBUG PRINT (ENSURE EXECUTION)
+    print("[DEBUG] Making first API call")
+
+    # 🔥 USE SIMPLE CHAT FORMAT (MOST COMPATIBLE)
+    response = client.chat.completions.create(
         model=MODEL_NAME,
-        input="hello"
+        messages=[
+            {"role": "user", "content": "Hello"}
+        ],
+        temperature=0.0
     )
 
+    print("[DEBUG] First API call completed")
+
     for step in range(1, 4):
-        response = client.responses.create(
+
+        print(f"[DEBUG] Step {step} API call")
+
+        response = client.chat.completions.create(
             model=MODEL_NAME,
-            input="Customer says: My order is delayed. Respond politely."
+            messages=[
+                {"role": "system", "content": "You are a helpful support agent"},
+                {"role": "user", "content": "Customer: My order is delayed"}
+            ],
+            temperature=0.0
         )
 
-        # 🔥 SAFE extraction
-        action = response.output_text.strip()
+        action = response.choices[0].message.content.strip()
 
         reward = 1.0 if step == 3 else 0.5
         done = step == 3
