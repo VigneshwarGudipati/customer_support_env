@@ -1,289 +1,365 @@
 ---
-title: Customer Support Env Environment Server
-emoji: ⏱️
+
+title: CustomerSupportEnv
+emoji: 🎧
 colorFrom: blue
-colorTo: blue
+colorTo: purple
 sdk: docker
 pinned: false
-app_port: 8000
-base_path: /web
+license: apache-2.0
 tags:
-  - openenv
+
+* openenv
+* reinforcement-learning
+* customer-support
+
 ---
 
-# Customer Support Env Environment
+# 🎧 CustomerSupportEnv — Reinforcement Learning Environment for Customer Support
 
-A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
+## 🧠 Overview
 
-## Quick Start
+CustomerSupportEnv is a reinforcement learning (RL) environment designed to simulate realistic customer support interactions.
 
-The simplest way to use the Customer Support Env environment is through the `CustomerSupportEnv` class:
+The system enables an AI agent to learn how to generate responses that are:
+
+* Empathetic
+* Contextually appropriate
+* Solution-oriented
+
+The environment provides structured evaluation and reward signals, allowing agents to improve through iterative interaction.
+
+---
+
+## 🎯 Motivation
+
+Customer support systems are increasingly automated using AI. However, generating responses alone is insufficient — the **quality of interaction** determines user satisfaction.
+
+In real-world settings, support agents must:
+
+* Interpret user intent under ambiguity
+* Respond with empathy and professionalism
+* Provide actionable solutions
+* Handle emotionally charged interactions
+
+This environment models these requirements in a controlled RL framework, enabling systematic improvement of agent behavior.
+
+---
+
+## 🔁 Reinforcement Learning Framework
+
+```text
+State → Action → Evaluation → Reward → Next State
+```
+
+* **State** → Customer query
+* **Action** → Agent-generated response
+* **Evaluation** → Response assessment
+* **Reward** → Score in range [0.0, 1.0]
+* **Next State** → Updated interaction context
+
+---
+
+## 🏗️ System Architecture
+
+```text
+LLM Agent
+   ↓
+Inference Layer (inference.py)
+   ↓
+Environment API (/reset, /step)
+   ↓
+Environment Core (environment.py)
+   ↓
+Evaluation Layer (grader.py)
+   ↓
+Reward Function (reward.py)
+   ↓
+Feedback Loop
+```
+
+### Description
+
+* **Inference Layer** handles agent interaction and logging
+* **API Layer** exposes environment endpoints via FastAPI
+* **Environment Core** manages state transitions and task selection
+* **Evaluation Layer** scores agent responses
+* **Reward Function** converts scores into learning signals
+
+---
+
+## 🧩 Task Design
+
+### Easy — Informational Queries
+
+* Example: "Where is my order?"
+* Focus: basic assistance
+
+### Medium — Problem Resolution
+
+* Example: "I received a damaged product"
+* Focus: corrective action
+
+### Hard — Emotional Interactions
+
+* Example: "Your service is terrible!"
+* Focus: empathy and de-escalation
+
+---
+
+## ⚙️ Evaluation System
+
+Responses are evaluated using rule-based heuristics.
+
+### Evaluation Criteria
+
+* **Empathy** → presence of apology or understanding
+* **Correctness** → alignment with expected response intent
+* **Actionability** → whether a solution is provided
+* **Clarity** → completeness and readability
+
+---
+
+## 🏆 Reward Function
+
+Rewards are normalized to the range **[0.0, 1.0]**.
+
+### Reward Factors
+
+* Response quality
+* Behavioral signals
+* Completeness of solution
+
+### Difficulty Scaling
+
+* Easy → baseline
+* Medium → moderate
+* Hard → higher weighting
+
+---
+
+## 🧾 Code Structure and Responsibilities
+
+* `env/environment.py` → core environment logic
+* `env/grader.py` → response evaluation
+* `env/reward.py` → reward computation
+* `env/models.py` → API schemas
+* `server/app.py` → FastAPI endpoints
+* `inference.py` → agent interaction loop
+
+---
+
+# 🔍 Detailed Code Walkthrough
+
+## Environment Core (`env/environment.py`)
 
 ```python
-from customer_support_env import CustomerSupportAction, CustomerSupportEnv
-
-try:
-    # Create environment from Docker image
-    customer_support_envenv = CustomerSupportEnv.from_docker_image("customer_support_env-env:latest")
-
-    # Reset
-    result = customer_support_envenv.reset()
-    print(f"Reset: {result.observation.echoed_message}")
-
-    # Send multiple messages
-    messages = ["Hello, World!", "Testing echo", "Final message"]
-
-    for msg in messages:
-        result = customer_support_envenv.step(CustomerSupportAction(message=msg))
-        print(f"Sent: '{msg}'")
-        print(f"  → Echoed: '{result.observation.echoed_message}'")
-        print(f"  → Length: {result.observation.message_length}")
-        print(f"  → Reward: {result.reward}")
-
-finally:
-    # Always clean up
-    customer_support_envenv.close()
+def reset(self):
+    self.task = random.choice(TASKS)
+    self.done = False
+    self.current_state = self.task["query"]
+    return {"state": self.current_state}
 ```
 
-That's it! The `CustomerSupportEnv.from_docker_image()` method handles:
-- Starting the Docker container
-- Waiting for the server to be ready
-- Connecting to the environment
-- Container cleanup when you call `close()`
+**Explanation:**
+Initializes a new episode by selecting a task and returning the customer query.
 
-## Building the Docker Image
-
-Before using the environment, you need to build the Docker image:
-
-```bash
-# From project root
-docker build -t customer_support_env-env:latest -f server/Dockerfile .
-```
-
-## Deploying to Hugging Face Spaces
-
-You can easily deploy your OpenEnv environment to Hugging Face Spaces using the `openenv push` command:
-
-```bash
-# From the environment directory (where openenv.yaml is located)
-openenv push
-
-# Or specify options
-openenv push --namespace my-org --private
-```
-
-The `openenv push` command will:
-1. Validate that the directory is an OpenEnv environment (checks for `openenv.yaml`)
-2. Prepare a custom build for Hugging Face Docker space (enables web interface)
-3. Upload to Hugging Face (ensuring you're logged in)
-
-### Prerequisites
-
-- Authenticate with Hugging Face: The command will prompt for login if not already authenticated
-
-### Options
-
-- `--directory`, `-d`: Directory containing the OpenEnv environment (defaults to current directory)
-- `--repo-id`, `-r`: Repository ID in format 'username/repo-name' (defaults to 'username/env-name' from openenv.yaml)
-- `--base-image`, `-b`: Base Docker image to use (overrides Dockerfile FROM)
-- `--private`: Deploy the space as private (default: public)
-
-### Examples
-
-```bash
-# Push to your personal namespace (defaults to username/env-name from openenv.yaml)
-openenv push
-
-# Push to a specific repository
-openenv push --repo-id my-org/my-env
-
-# Push with a custom base image
-openenv push --base-image ghcr.io/meta-pytorch/openenv-base:latest
-
-# Push as a private space
-openenv push --private
-
-# Combine options
-openenv push --repo-id my-org/my-env --base-image custom-base:latest --private
-```
-
-After deployment, your space will be available at:
-`https://huggingface.co/spaces/<repo-id>`
-
-The deployed space includes:
-- **Web Interface** at `/web` - Interactive UI for exploring the environment
-- **API Documentation** at `/docs` - Full OpenAPI/Swagger interface
-- **Health Check** at `/health` - Container health monitoring
-- **WebSocket** at `/ws` - Persistent session endpoint for low-latency interactions
-
-## Environment Details
-
-### Action
-**CustomerSupportAction**: Contains a single field
-- `message` (str) - The message to echo back
-
-### Observation
-**CustomerSupportObservation**: Contains the echo response and metadata
-- `echoed_message` (str) - The message echoed back
-- `message_length` (int) - Length of the message
-- `reward` (float) - Reward based on message length (length × 0.1)
-- `done` (bool) - Always False for echo environment
-- `metadata` (dict) - Additional info like step count
-
-### Reward
-The reward is calculated as: `message_length × 0.1`
-- "Hi" → reward: 0.2
-- "Hello, World!" → reward: 1.3
-- Empty message → reward: 0.0
-
-## Advanced Usage
-
-### Connecting to an Existing Server
-
-If you already have a Customer Support Env environment server running, you can connect directly:
+---
 
 ```python
-from customer_support_env import CustomerSupportEnv
+def step(self, action: str):
+    score, breakdown = evaluate_response(action, self.task)
+    reward = compute_reward(score, self.task["level"])
 
-# Connect to existing server
-customer_support_envenv = CustomerSupportEnv(base_url="<ENV_HTTP_URL_HERE>")
+    self.done = True
+    self.current_state = "Conversation ended"
 
-# Use as normal
-result = customer_support_envenv.reset()
-result = customer_support_envenv.step(CustomerSupportAction(message="Hello!"))
+    return {
+        "observation": {"state": self.current_state},
+        "reward": reward,
+        "done": self.done,
+        "info": breakdown,
+    }
 ```
 
-Note: When connecting to an existing server, `customer_support_envenv.close()` will NOT stop the server.
+**Explanation:**
+Evaluates the agent response, computes reward, and returns structured output.
 
-### Using the Context Manager
+---
 
-The client supports context manager usage for automatic connection management:
+## Evaluation Logic (`env/grader.py`)
 
 ```python
-from customer_support_env import CustomerSupportAction, CustomerSupportEnv
+def evaluate_response(response, task):
+    response = response.lower()
+    score = 0
 
-# Connect with context manager (auto-connects and closes)
-with CustomerSupportEnv(base_url="http://localhost:8000") as env:
-    result = env.reset()
-    print(f"Reset: {result.observation.echoed_message}")
-    # Multiple steps with low latency
-    for msg in ["Hello", "World", "!"]:
-        result = env.step(CustomerSupportAction(message=msg))
-        print(f"Echoed: {result.observation.echoed_message}")
+    if any(word in response for word in ["sorry", "understand"]):
+        score += 3
+
+    if any(word in response for word in task["expected"]):
+        score += 3
+
+    if len(response) > 20:
+        score += 2
+
+    return score, {}
 ```
 
-The client uses WebSocket connections for:
-- **Lower latency**: No HTTP connection overhead per request
-- **Persistent session**: Server maintains your environment state
-- **Efficient for episodes**: Better for many sequential steps
+**Explanation:**
+Scores responses based on empathy, correctness, and length.
 
-### Concurrent WebSocket Sessions
+---
 
-The server supports multiple concurrent WebSocket connections. To enable this,
-modify `server/app.py` to use factory mode:
+## Reward Function (`env/reward.py`)
 
 ```python
-# In server/app.py - use factory mode for concurrent sessions
-app = create_app(
-    CustomerSupportEnvironment,  # Pass class, not instance
-    CustomerSupportAction,
-    CustomerSupportObservation,
-    max_concurrent_envs=4,  # Allow 4 concurrent sessions
+def compute_reward(score, level):
+    base = score / 10.0
+
+    if level == "easy":
+        multiplier = 1.0
+    elif level == "medium":
+        multiplier = 1.2
+    else:
+        multiplier = 1.5
+
+    reward = base * multiplier
+    return max(0.0, min(reward, 1.0))
+```
+
+**Explanation:**
+Normalizes score and applies difficulty scaling.
+
+---
+
+## API Layer (`server/app.py`)
+
+```python
+@app.post("/reset")
+def reset():
+    return env.reset()
+
+@app.post("/step")
+def step(action: Action):
+    return env.step(action.action)
+
+@app.get("/state")
+def state():
+    return env.state()
+```
+
+**Explanation:**
+Exposes environment functionality via REST API.
+
+---
+
+## Inference Loop (`inference.py`)
+
+```python
+completion = client.chat.completions.create(
+    model=MODEL_NAME,
+    messages=[
+        {"role": "system", "content": "..."},
+        {"role": "user", "content": state},
+    ],
 )
 ```
 
-Then multiple clients can connect simultaneously:
+**Explanation:**
+Generates agent response using LLM.
+
+---
 
 ```python
-from customer_support_env import CustomerSupportAction, CustomerSupportEnv
-from concurrent.futures import ThreadPoolExecutor
-
-def run_episode(client_id: int):
-    with CustomerSupportEnv(base_url="http://localhost:8000") as env:
-        result = env.reset()
-        for i in range(10):
-            result = env.step(CustomerSupportAction(message=f"Client {client_id}, step {i}"))
-        return client_id, result.observation.message_length
-
-# Run 4 episodes concurrently
-with ThreadPoolExecutor(max_workers=4) as executor:
-    results = list(executor.map(run_episode, range(4)))
+response = requests.post(
+    f"{ENV_URL}/step",
+    json={"action": action},
+)
 ```
 
-## Development & Testing
+**Explanation:**
+Sends action to environment and retrieves reward.
 
-### Direct Environment Testing
+---
 
-Test the environment logic directly without starting the HTTP server:
-
-```bash
-# From the server directory
-python3 server/customer_support_env_environment.py
+```python
+state = data.get("observation", {}).get("state", state)
 ```
 
-This verifies that:
-- Environment resets correctly
-- Step executes actions properly
-- State tracking works
-- Rewards are calculated correctly
+**Explanation:**
+Updates state for next iteration.
 
-### Running Locally
+---
 
-Run the server locally for development:
+## 🤖 Inference System
 
-```bash
-uvicorn server.app:app --reload
+* Uses `API_BASE_URL` and `API_KEY`
+* Ensures proxy-based API calls
+* Logs execution in structured format:
+
+```
+[START]
+[STEP]
+[END]
 ```
 
-## Project Structure
+---
+
+## 🌐 API Endpoints
+
+| Method | Endpoint |
+| ------ | -------- |
+| POST   | `/reset` |
+| POST   | `/step`  |
+| GET    | `/state` |
+
+---
+
+## 📦 Project Structure
 
 ```
 customer_support_env/
-├── .dockerignore         # Docker build exclusions
-├── __init__.py            # Module exports
-├── README.md              # This file
-├── openenv.yaml           # OpenEnv manifest
-├── pyproject.toml         # Project metadata and dependencies
-├── uv.lock                # Locked dependencies (generated)
-├── client.py              # CustomerSupportEnv client
-├── models.py              # Action and Observation models
-└── server/
-    ├── __init__.py        # Server module exports
-    ├── customer_support_env_environment.py  # Core environment logic
-    ├── app.py             # FastAPI application (HTTP + WebSocket endpoints)
-    └── Dockerfile         # Container image definition
+├── env/
+├── server/
+├── inference.py
+├── openenv.yaml
+├── requirements.txt
 ```
-This environment simulates real-world customer support interactions for training reinforcement learning agents.
 
-The agent must respond to customer complaints with empathy, understanding, and actionable solutions.
-## Why This Environment Matters
+---
 
-This environment simulates real customer interactions to train AI agents that can:
-- Improve customer satisfaction
-- Reduce response time
-- Automate support systems at scale
+## 🧠 Design Decisions
 
-## Difficulty Levels
+* Rule-based evaluation for deterministic scoring
+* Normalized rewards for RL compatibility
+* Single-turn design for simplicity
+* Modular architecture for extensibility
 
-- Easy → Basic acknowledgment
-- Medium → Problem resolution
-- Hard → Emotional intelligence + reasoning
+---
 
-## Reward Function
+## ⚠️ Limitations
 
-The agent is rewarded based on behavior:
+* Single-turn interaction
+* Heuristic evaluation
+* Limited scenarios
 
-- Apology ("sorry") → +0.3  
-- Understanding ("I understand") → +0.2  
-- Solution ("refund/replace/resolve") → +0.4  
-- Politeness ("thank you") → +0.1  
-- Short responses → penalty  
+---
 
-## Baseline Performance
+## 🚀 Future Work
 
-- Easy → 0.8–1.0  
-- Medium → 0.6–0.9  
-- Hard → 0.5–0.8  
+* Multi-turn conversations
+* LLM-based evaluation
+* Expanded task diversity
 
-This encourages agents to respond with empathy, clarity, and actionable solutions.
-Designed for real-world deployment in customer service automation systems.
+---
+
+## 🏁 Conclusion
+
+CustomerSupportEnv provides a structured RL environment that:
+
+* Simulates customer support scenarios
+* Evaluates responses systematically
+* Enables iterative improvement
+
+It serves as a foundation for building intelligent support agents.
