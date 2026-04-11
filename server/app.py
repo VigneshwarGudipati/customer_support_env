@@ -6,14 +6,10 @@ app = FastAPI()
 env = Env()
 
 
-@app.get("/")
-def root():
-    return {"status": "ok"}
-
-
 @app.post("/reset")
 def reset():
-    return env.reset()
+    state = env.reset()
+    return {"state": state["state"] if isinstance(state, dict) else state}
 
 
 @app.post("/step")
